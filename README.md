@@ -1,93 +1,358 @@
-# CodeIgniter 4 Development
+# Bahan kajian
+<p>Untuk memulai membuat aplikasi CRUD sederhana, yang perlu disiapkan adalah Database Server
+menggunakan MySQL. Pastikan MySQL Server sudah dapat dijalankan melalui XAMPP.</p>
 
-[![Build Status](https://github.com/codeigniter4/CodeIgniter4/workflows/PHPUnit/badge.svg)](https://github.com/codeigniter4/CodeIgniter4/actions?query=workflow%3A%22PHPUnit%22)
-[![Coverage Status](https://coveralls.io/repos/github/codeigniter4/CodeIgniter4/badge.svg?branch=develop)](https://coveralls.io/github/codeigniter4/CodeIgniter4?branch=develop)
-[![Downloads](https://poser.pugx.org/codeigniter4/framework/downloads)](https://packagist.org/packages/codeigniter4/framework)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/codeigniter4/CodeIgniter4)](https://packagist.org/packages/codeigniter4/framework)
-[![GitHub stars](https://img.shields.io/github/stars/codeigniter4/CodeIgniter4)](https://packagist.org/packages/codeigniter4/framework)
-[![GitHub license](https://img.shields.io/github/license/codeigniter4/CodeIgniter4)](https://github.com/codeigniter4/CodeIgniter4/blob/develop/LICENSE)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/codeigniter4/CodeIgniter4/pulls)
-<br>
+# Membuat struktur database
+## membuat website artikel
+![Studi Kasus](gambar/1.png)
 
-## What is CodeIgniter?
+1. Buat Database baru dengan nama `lab4_ci` dengan query berikut.
+```sql
+CREATE DATABASE lab_ci4;
+```
+2. Buat Table baru dengan nama `artikel` dengan query berikut.
+```sql
+CREATE TABLE artikel (
+  id INT(11) auto_increment,
+  judul VARCHAR(200) NOT NULL,
+  isi TEXT,
+  gambar VARCHAR(200),
+  status TINYINT(1) DEFAULT 0,
+  slug VARCHAR(200),
+  PRIMARY KEY(id)
+);
+```
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](http://codeigniter.com).
+# Setting koneksi database
+<p>Selanjutnya membuat setting untuk menghubungkan dengan Database. Konfigurasi dapat
+dilakukan : yaitu pada file app/config/database.php atau menggunakan file .env</p>
 
-This repository holds the source code for CodeIgniter 4 only.
-Version 4 is a complete rewrite to bring the quality and the code into a more modern version,
-while still keeping as many of the things intact that has made people love the framework over the years.
+![konfigurasi Database](gambar/2.png)
 
-More information about the plans for version 4 can be found in [the announcement](http://forum.codeigniter.com/thread-62615.html) on the forums.
+# model proses data artikel
+<p>membuat Model untuk memproses data Artikel. Buat file baru pada direktori
+app/Models dengan nama ArtikelModel.php, Kemudian masukan kode berikut.</p>
 
-### Documentation
+```php
+<?php
 
-The [User Guide](https://codeigniter4.github.io/userguide/) is the primary documentation for CodeIgniter 4.
+namespace App\Models;
 
-The current **in-progress** User Guide can be found [here](https://codeigniter4.github.io/CodeIgniter4/).
-As with the rest of the framework, it is a work in progress, and will see changes over time to structure, explanations, etc.
+use CodeIgniter\Model;
 
-You might also be interested in the [API documentation](https://codeigniter4.github.io/api/) for the framework components.
+class ArtikelModel extends Model
+{
+  protected $table = 'artikel';
+  protected $primaryKey = 'id';
+  protected $useAutoIncrement = true;
+  protected $allowedFields = ['judul', 'isi', 'status', 'slug', 'gambar'];
+}
+```
 
-## Important Change with index.php
+# Setting Controller
+<p>Buat Controller baru dengan nama Artikel.php pada direktori app/Controllers.
 
-index.php is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+```php
+<?php
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+namespace App\Controllers;
 
-**Please** read the user guide for a better explanation of how CI4 works!
+use App\Models\ArtikelModel;
+use CodeIgniter\Exceptions\PageNotFoundException;
 
-## Repository Management
+class Artikel extends BaseController
+{
+    public function index()
+    {
+        $title = 'Daftar Artikel';
+        $model = new ArtikelModel();
+        $artikel = $model->findAll();
+        return view('artikel/index', compact('artikel', 'title'));
+    }
+}
+```
 
-CodeIgniter is developed completely on a volunteer basis. As such, please give up to 7 days
-for your issues to be reviewed. If you haven't heard from one of the team in that time period,
-feel free to leave a comment on the issue so that it gets brought back to our attention.
+# View Artikel
+- Buat direktori baru dengan nama artikel pada direktori app/Views, kemudian buat file baru dengan
+nama index.php, Kemudian masukan kode berikut.
 
-We use GitHub issues to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+```php
+<?= $this->include('template/header'); ?>
+<?php
+if ($artikel) :
+  foreach ($artikel as $row) : ?>
+    <article class="entry">
+      <h2><a href="<?= base_url('/artikel/' . $row['slug']); ?>"><?= $row['judul']; ?></a></h2>
+      <img src="<?= base_url('/gambar/' . $row['gambar']); ?>" alt="<?= $row['judul']; ?>">
+      <p><?= substr($row['isi'], 0, 1000); ?></p>
+    </article>
 
-If you raise an issue here that pertains to support or a feature request, it will
-be closed! If you are not sure if you have found a bug, raise a thread on the forum first -
-someone else may have encountered the same thing.
+    <hr class="divider" />
+  <?php endforeach;
+else : ?>
+  <article class="entry">
+    <h2>Belum Ada Data.</h2>
+  </article>
+<?php endif; ?>
+<?= $this->include('template/footer'); ?>
+```
 
-Before raising a new GitHub issue, please check that your bug hasn't already
-been reported or fixed.
+- Akses URL http://localhost:8080/artikel
 
-We use pull requests (PRs) for CONTRIBUTIONS to the repository.
-We are looking for contributions that address one of the reported bugs or
-approved work packages.
+![Tampilan Web](gambar/3.png)
 
-Do not use a PR as a form of feature request.
-Unsolicited contributions will only be considered if they fit nicely
-into the framework roadmap.
-Remember that some components that were part of CodeIgniter 3 are being moved
-to optional packages, with their own repository.
+<p>Masih belum terdapat database.</p>
 
-## Contributing
+```sql
+INSERT INTO artikel (judul, isi, slug) VALUE
+('Artikel pertama', 'Lorem Ipsum adalah contoh teks atau dummy dalam
+industri percetakan dan penataan huruf atau typesetting. Lorem Ipsum telah
+menjadi standar contoh teks sejak tahun 1500an, saat seorang tukang cetak
+yang tidak dikenal mengambil sebuah kumpulan teks dan mengacaknya untuk
+menjadi sebuah buku contoh huruf.', 'artikel-pertama'),
+('Artikel kedua', 'Tidak seperti anggapan banyak orang, Lorem Ipsum
+bukanlah teks-teks yang diacak. Ia berakar dari sebuah naskah sastra latin
+klasik dari era 45 sebelum masehi, hingga bisa dipastikan usianya telah
+mencapai lebih dari 2000 tahun.', 'artikel-kedua');
+```
 
-We **are** accepting contributions from the community!
+- Muat ulang browser.
 
-Please read the [*Contributing to CodeIgniter*](https://github.com/codeigniter4/CodeIgniter4/blob/develop/contributing/README.md).
+![Tampilan Artikel](gambar/7.png)
 
-## Server Requirements
+# tampilan data artikel
+<p>Tampilan pada saat judul berita di klik maka akan diarahkan ke halaman yang berbeda. Tambahkan
+fungsi baru pada Controller Artikel dengan nama view().</p>
 
-PHP version 7.3 or higher is required, with the following extensions installed:
+```php
+public function view($slug)
+ {
+ $model = new ArtikelModel();
+ $artikel = $model->where([
+ 'slug' => $slug
+ ])->first();
+ // Menampilkan error apabila data tidak ada.
+ if (!$artikel)
+ {
+    throw PageNotFoundException::forPageNotFound();
+}
+$title = $artikel['judul'];
+return view('artikel/detail', compact('artikel', 'title'));
+}
+```
+
+# halaman view detail
+<p>Buat view baru untuk halaman detail dengan nama app/views/artikel/detail.php, Kemudian masukan kode berikut.</p>
+
+```php
+<?= $this->include('template/header'); ?>
+
+<article class="entry">
+
+  <h2><?= $artikel['judul']; ?></h2>
+  <img src="<?= base_url('/gambar/' . $artikel['gambar']); ?>" alt="<?= $artikel['judul']; ?>">
+  <p>
+    <?= $artikel['isi']; ?>
+  </p>
+</article>
+
+<?= $this->include('template/footer'); ?>
+```
+
+# Membuat Routing Untuk Artikel
+<p>Buka Kembali file app/config/Routes.php, kemudian tambahkan routing untuk artikel detail.</p>
+
+```php
+$routes->get('/artikel/(:any)', 'Artikel::view/$1');
+```
+
+![Detail Artikel](gambar/5.png)
+
+# Membuat Menu Admin
+- Menu Admin adalah untuk proses CRUD data artikel. Buat method baru pada Controller Artikel dengan
+nama admin_index(), Kemudian masukan kode berikut.
+
+```php
+public function admin_index()
+{
+$title = 'Daftar Artikel';
+$model = new ArtikelModel();
+$artikel = $model->findAll();
+return view('artikel/admin_index', compact('artikel', 'title'));
+}
+```
+
+- Selanjutnya buat view untuk tampilan admin dengan nama admin_index.php
+
+```php
+<?= $this->include('template/admin_header'); ?> 
+<link rel="stylesheet" href="<?= base_url('/style.css'); ?>">
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Judul</th>
+      <th>Status</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <?php if ($artikel) : foreach ($artikel as $row) : ?>
+        <tr>
+          <td><?= $row['id']; ?></td>
+          <td>
+            <b><?= $row['judul']; ?></b>
+            <p>
+              <small><?= substr($row['isi'], 0, 50); ?></small>
+            </p>
+          </td>
+          <td><?= $row['status']; ?></td>
+          <td>
+            <a class="btn" href="<?= base_url('/admin/artikel/edit/' . $row['id']); ?>">Ubah</a>
+            <a class="btn btn-danger" onclick="return confirm('Yakin menghapus data ?');" href="<?= base_url('/admin/artikel/delete/' . $row['id']); ?>">Hapus</a>
+          </td>
+        </tr>
+      <?php endforeach;
+    else : ?>
+      <tr>
+        <td colspan="4">Belum Ada Data</td>
+      </tr>
+    <?php endif; ?>
+  </tbody>
+  <tfoot>
+    <tr>
+      <th>ID</th>
+      <th>Judul</th>
+      <th>Status</th>
+      <th>AKsi</th>
+    </tr>
+  </tfoot>
+</table> <?= $this->include('template/admin_footer'); ?>
+```
+
+- Tambahkan routing untuk menu admin seperti berikut:
+
+```php
+$routes->group('admin', function($routes) {
+  $routes->get('artikel', 'Artikel::admin_index');
+  $routes->add('artikel/add', 'Artikel::add');
+  $routes->add('artikel/edit/(:any)', 'Artikel::edit/$1');
+  $routes->get('artikel/delete/(:any)', 'Artikel::delete/$1');
+});
+```
+
+- Akses menu admin dengan url http://localhost:8080/admin/artikel
+
+![Admin Index](gambar/6.png)
+
+# Tambah data artikel
+- Tambahkan fungsi/method baru pada Controller Artikel dengan nama add().
+
+```php
+public function add()
+{
+// validasi data.
+$validation = \Config\Services::validation();
+$validation->setRules(['judul' => 'required']);
+$isDataValid = $validation->withRequest($this->request)->run();
+if ($isDataValid)
+{
+$artikel = new ArtikelModel();
+$artikel->insert([
+'judul' => $this->request->getPost('judul'),
+'isi' => $this->request->getPost('isi'),
+'slug' => url_title($this->request->getPost('judul')),
+]);
+return redirect('admin/artikel');
+}
+$title = "Tambah Artikel";
+return view('artikel/form_add', compact('title'));
+}
+```
+
+- Kemudian buat view untuk form tambah dengan nama form_add.php
+
+```php
+<?= $this->include('template/admin_header'); ?>
+<link rel="stylesheet" href="<?= base_url('/style.css'); ?>">
+<div class="add">
+  <div class="title">
+    <h2><?= $title; ?></h2>
+  </div>
+  <form action="" method="POST">
+    <p>
+      <input type="text" name="judul" placeholder="Judul Artikel....">
+    </p>
+    <p>
+      <textarea name="isi" id="isi" cols="50" rows="10" placeholder="Isi Artikel...."></textarea>
+    </p>
+    <p><input type="submit" value="kirim" class="btn btn-large"></p>
+  </form>
+</div>
+
+<?= $this->include('template/admin_footer'); ?>
+```
+
+![Tambah Artikel](gambar/4.png)
+
+# Ubah Data
+- Tambahkan fungsi/method baru pada Controller Artikel dengan nama edit().
+
+```php
+public function edit($id)
+ {
+ $artikel = new ArtikelModel();
+ // validasi data.
+ $validation = \Config\Services::validation();
+ $validation->setRules(['judul' => 'required']);
+ $isDataValid = $validation->withRequest($this->request)->run();
+ if ($isDataValid)
+ {
+ $artikel->update($id, [
+ 'judul' => $this->request->getPost('judul'),
+ 'isi' => $this->request->getPost('isi'),
+ ]);
+ return redirect('admin/artikel');
+ }
+ // ambil data lama
+ $data = $artikel->where('id', $id)->first();
+ $title = "Edit Artikel";
+ return view('artikel/form_edit', compact('title', 'data'));
+ }
+```
+
+- Kemudian buat view untuk form tambah dengan nama form_edit.php
+
+```php
+<?= $this->include('template/admin_header'); ?>
+<h2><?= $title; ?></h2>
+<form action="" method="post">
+ <p>
+ <input type="text" name="judul" value="<?= $data['judul'];?>" >
+ </p>
+ <p>
+ <textarea name="isi" cols="50" rows="10"><?=
+$data['isi'];?></textarea>
+ </p>
+ <p><input type="submit" value="Kirim" class="btn btn-large"></p>
+</form>
+<?= $this->include('template/admin_footer'); ?>
+```
+
+![Edit Artikel](gambar/8.png)
+
+# Hapus Data
+<p>Tambahkan fungsi/method baru pada Controller Artikel dengan nama delete().</p>
+
+```php
+public function delete($id)
+{
+  $artikel = new ArtikelModel();
+  $artikel->delete($id);
+  return redirect('admin/artikel');
+}
+```
 
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
 
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- xml (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php)
-
-## Running CodeIgniter Tests
-
-Information on running the CodeIgniter test suite can be found in the [README.md](tests/README.md) file in the tests directory.
+## CI 4 ===
